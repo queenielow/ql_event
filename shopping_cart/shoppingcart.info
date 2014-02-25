@@ -1,0 +1,5 @@
+name = shoppingcart
+description = Shopping Cart for Events
+core = 7.x
+package = modules
+files[] = shoppingcart.module

@@ -1,0 +1,452 @@
+<?php
+
+/**
+* Implements hook_permission().
+*/
+function shoppingcart_permission(){
+  return array(
+    'access content' => array(
+      'title' => t('Access for shopping cart module'),
+    ) 
+  ); 
+}
+
+function shoppingcart_menu() {
+  $items = array();
+  
+  $items['addcartform'] = array(
+    //'description' => 'Configuration for Current posts module',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('addcart_form'),
+    'access arguments' => array('access content'),
+   // 'type' => MENU_NORMAL_ITEM,
+  );
+  
+  $items['prodtocart']=array(
+  	'page callback'=>'drupal_get_form',
+  	'page arguments'=>array('prodtocart_form'),
+  	'access arguments'=>array('access content'),
+  //	'type'=> MENU_NORMAL_ITEM,
+  );
+  
+  $items['removefromcart']=array(
+  	'page callback'=>'drupal_get_form',
+  	'page arguments'=>array('removefromcart_form'),
+  	'access arguments'=>array('access content'),
+  //	'type'=> MENU_NORMAL_ITEM,
+  );
+  
+  $items['updatecartcheckout']=array(
+  	'page callback'=>'drupal_get_form',
+  	'page arguments'=>array('updateqty_form'),
+  	'access arguments'=>array('access content'),
+  //	'type'=> MENU_NORMAL_ITEM,
+  );
+  
+  $items['submittobusiness']=array(
+  	'page callback'=>'drupal_get_form',
+  	'page arguments'=>array('submittobusiness_form'),
+  	'access arguments'=>array('access content'),
+  //	'type'=> MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+
+function shoppingcart_block_info() {
+  $blocks = array();
+  $blocks['addtocart'] = array(
+    'info' => t('Add to cart Block'),
+  );
+  $blocks['viewcart'] = array(
+    'info' => t('View cart Block'),
+  );
+ $blocks['checkout'] = array(
+    'info' => t('Checkout Block'),
+  );
+ 
+  return $blocks;
+}
+
+
+function shoppingcart_block_view($delta='') {
+  $block = array();
+  switch ($delta) {
+    case 'addtocart':
+      $block['subject'] = t('');
+      $block['content'] = drupal_get_form('addcart_form');
+     
+      break;
+    case 'viewcart':
+      $block['subject'] = t('My Cart');
+     // $block['content'] = viewcart_form();
+     $block['content'] =viewcart_form();
+      break;
+   case 'checkout':
+      $block['subject'] = t('Checkout');
+     // $block['content'] = viewcart_form();
+     $block['content'] =checkout_form();
+      break;
+  }
+  return $block;
+}
+
+function viewcart_form() {
+global $user;
+$uid=$user->uid;
+$v1=l('My Cart','node/69');
+$v1.=views_embed_view("my_cart","default",$uid);
+
+return $v1;
+}
+
+function checkout_form() {
+global $user;
+$uid=$user->uid;
+ 
+$v1=views_embed_view("checkout_2","default",$uid);
+return $v1;
+}
+
+
+//THIS FUNCTION DISPLAY ADD TO [EVENTS] BUTTON AND QTY
+function addcart_form($form, &$form_state,$eventid,$prodid){
+  global $user;
+  global $base_url;
+ 
+  $event_load=node_load($eventid);
+  $prod_load=node_load($prodid);
+
+ $minqty= $prod_load->field_quantity['und'][0]['value'];
+
+
+  $event_name='Add to '.$event_load->title;
+  $form['#action'] = url('prodtocart');
+ 
+  
+  $form[$eventid]['prodid']=array(
+    '#type'=>'hidden',
+    '#value'=>$prodid,
+    );
+  
+  $form[$eventid]['eventid']=array(
+    '#type'=>'hidden',
+    '#value'=>$eventid,
+    );
+    
+  $form[$eventid]['eventqty']=array(
+    '#type'=>'textfield',
+    '#value'=>$minqty,
+    '#title'=>t('Qty'),
+    '#size'=>5,
+    );
+    
+
+  $form[$eventid]['submit'] = array(
+    '#type'=>'submit',
+    '#value' => t($event_name),
+    '#name'=>t($eventid),
+   '#ajax' => array(
+                'callback' => 'prodtocart_form',
+                'wrapper' => 'add-prod-form',
+                'method' => 'replace',
+                'effect' => 'fade',
+                'progress' => array('type' => 'throbber', 'message' => t('Added to cart...')),
+),
+
+  );
+  
+ return $form;
+ 
+}
+
+//THIS FUNCTION IS FOR CHECKOUT UPDATE [BUTTON] QTY
+function updateqty_form($form, &$form_state,$logid){
+  global $user;
+  global $base_url;
+ 
+  $log_load=node_load($logid);
+
+  $currentqty= $log_load->field_qty['und'][0]['value'];
+  $prodid=$log_load->field_prod_id['und'][0]['value'];
+  $eventid=$log_load->field_event_id['und'][0]['value'];
+
+  $form['#action'] = url('prodtocart');
+ 
+  $form[$eventid]['prodid']=array(
+    '#type'=>'hidden',
+    '#value'=>$prodid,
+    );
+  
+  $form[$eventid]['eventid']=array(
+    '#type'=>'hidden',
+    '#value'=>$eventid,
+    );
+    
+  $form[$eventid]['eventqty']=array(
+    '#type'=>'textfield',
+    '#value'=>$currentqty,
+    '#title'=>t('Qty'),
+    '#size'=>5,
+    );
+    
+
+  $form[$eventid]['submit'] = array(
+    '#type'=>'submit',
+    '#value' => t('Update'),
+    '#name'=>t($logid),
+   '#ajax' => array(
+                'callback' => 'checkoutupdate_form',
+                'wrapper' => 'add-prod-form',
+                'method' => 'replace',
+                'effect' => 'fade',
+                'progress' => array('type' => 'throbber', 'message' => t('Update qty...')),
+        ),
+    
+      );
+  
+ return $form;
+ 
+}
+
+//THIS FUNCTION UPDATES AT CHECKOUT
+function checkoutupdate_form($form, &$form_state){
+global $user;
+global $node;
+
+  $qty_ord=$form_state['input']['eventqty'];
+  $uid=$user->uid;
+  $prodid=$form_state['input']['prodid'];
+  $eventid=$form_state['input']['eventid'];
+  $today=date("Y-m-d H:i:s");
+  
+//SEARCH FOR EXISTING PRODUCT LOG/CART
+
+$existed_id=views_get_view_result("query_product_log","default",$eventid,$prodid);
+  
+//END SEARCH FOR EXISTING PRODUCT LOG/CART
+  
+if ($existed_id){  
+//UPDATE QTY EXISTED EVENT AND PROD
+
+$enid=$existed_id[0]->nid;
+$enid_ld=node_load($enid);
+
+$eqty=$enid_ld->field_qty['und'][0]['value'];
+
+$pnid_ld=node_load($prodid);
+$pminqty=$pnid_ld->field_quantity['und'][0]['value'];
+
+if ($qty_ord>=$pminqty){
+    $enid_ld->field_qty['und'][0]['value'] =$qty_ord;
+}else{
+    $enid_ld->field_qty['und'][0]['value'] =$pminqty;
+}
+
+node_save($enid_ld);
+//END UPDATE QTY EXISTED EVENT AND PROD
+   
+    }
+  
+}
+ 
+ 
+//THIS FUNCTION ADD/UPDATES CART ENTRIES  
+function prodtocart_form($form, &$form_state){
+global $user;
+global $node;
+
+  $qty_ord=$form_state['input']['eventqty'];
+  $uid=$user->uid;
+  $prodid=$form_state['input']['prodid'];
+  $eventid=$form_state['input']['eventid'];
+  $today=date("Y-m-d H:i:s");
+  
+//SEARCH FOR EXISTING PRODUCT LOG/CART
+//
+
+$existed_id=views_get_view_result("query_product_log","default",$eventid,$prodid);
+  
+//END SEARCH FOR EXISTING PRODUCT LOG/CART
+  
+if ($existed_id){  
+//UPDATE QTY EXISTED EVENT AND PROD
+
+$enid=$existed_id[0]->nid;
+$enid_ld=node_load($enid);
+$eqty=$enid_ld->field_qty['und'][0]['value'];
+
+$pnid_ld=node_load($prodid);
+$pminqty=$pnid_ld->field_quantity['und'][0]['value'];
+
+$newqty=$eqty+$qty_ord;
+if ($newqty >=$pminqty){
+    $enid_ld->field_qty['und'][0]['value'] =$newqty;
+}else{
+    $enid_ld->field_qty['und'][0]['value'] =$pminqty;
+}
+
+node_save($enid_ld);
+//END UPDATE QTY EXISTED EVENT AND PROD
+  
+ 
+}else{
+
+ //ADD NEW CART
+  $newNode = (object) NULL;
+  $newNode->type = 'product_logs';
+  $newNode->title='Product Booked '.$eventid.'-'.$prodid;
+  $newNode->uid = $uid;
+  $newNode->created = strtotime("now");
+  $newNode->changed = strtotime("now");
+  $newNode->status = 1;
+  $newNode->comment = 0;
+  $newNode->promote = 0;
+  $newNode->moderate = 0;
+  $newNode->sticky = 0;
+  $newNode->language = 'und';
+
+ 
+node_object_prepare($newNode);
+$newNode->field_prod_id['und'][0]['value']=$prodid;
+$newNode->field_event_id['und'][0]['value']=$eventid;
+
+$pnid_ld=node_load($prodid);
+
+$business_id=$pnid_ld->field_business_id['und'][0]['target_id'];
+$newNode->field_prd_log_business_id['und'][0]['value']=$business_id;
+
+$pminqty=$pnid_ld->field_quantity['und'][0]['value'];
+if ($qty_ord >=$pminqty){
+    $newNode->field_qty['und'][0]['value']=$qty_ord;
+}else{
+   $newNode->field_qty['und'][0]['value']=$pminqty;
+}
+node_save($newNode);
+$node_id = $newNode->nid;
+//END NEW CART
+
+}
+
+
+}
+
+function removefromcart_form($form, &$form_state,$logid,$prod_id){
+    
+ $form[$logid]['log_id']=array(
+    '#type'=>'hidden',
+    '#value'=>$logid,
+    '#size'=>5,
+    );
+    
+ $form[$logid]['prod_id']=array(
+    '#type'=>'hidden',
+    '#value'=>$prod_id,
+    '#size'=>5,
+    );
+
+  $form[$logid]['submit'] = array(
+    '#type'=>'submit',
+    '#value' => t('Remove'),
+    '#name'=>t('Remove'),
+   /*'#ajax' => array(
+                'callback' => 'removefromcart_form_submit',
+                'wrapper' => 'remove-prod-form',
+                'method' => 'replace',
+                'effect' => 'fade',
+                'progress' => array('type' => 'throbber', 'message' => t('Remove from cart...')),
+),*/
+
+  );
+  
+ return $form;
+    
+}
+ 
+ 
+function removefromcart_form_submit($form, &$form_state){
+$logid=$form_state['input']['log_id'];
+$prodid=$form_state['input']['prod_id'];
+
+$prod_t=node_load($prodid);
+drupal_set_message($prod_t->title.' successfully removed');
+
+//GET Inactive - Removed TID
+$tid=taxonomy_get_term_by_name('Inactive - Removed');
+foreach($tid as $t){
+ $t1=$t->tid;
+}
+
+//END GET Inactive - Removed TID
+
+//UPDATE prd_status to Inactive - Removed
+$pnid_ld=node_load($logid);
+
+$pnid_ld->field_prod_status['und'][0]['tid']= $t1;
+
+node_save($pnid_ld);
+
+//END UPDATE prd_status to Inactive - Removed
+}
+
+
+function submittobusiness_form($form, &$form_state,$eventid){
+ $form['eventid']=array(
+    '#type'=>'hidden',
+    '#value'=>$eventid,
+    '#size'=>5,
+    );
+
+  $form['submit'] = array(
+    '#type'=>'submit',
+    '#value' => t('Confirm Booking'),
+    '#name'=>t('Confirm Booking'),
+   /*'#ajax' => array(
+                'callback' => 'removefromcart_form_submit',
+                'wrapper' => 'remove-prod-form',
+                'method' => 'replace',
+                'effect' => 'fade',
+                'progress' => array('type' => 'throbber', 'message' => t('Remove from cart...')),
+),*/
+
+  );
+  
+ return $form;
+    
+}
+
+function submittobusiness_form_submit($form, &$form_state){
+global $user;
+$eventid=$form_state['input']['eventid'];
+$prod_id= views_get_view_result("search_prod_nid_for_confirm_booking", "default", $eventid);
+foreach($prod_id as $pid){
+    $prodnid=$pid->nid;
+    
+//UPDATE PROD STATUS TO Pending business approval
+//GET Pending TID
+$tid=taxonomy_get_term_by_name('Pending business approval');
+foreach($tid as $t){
+ $t1=$t->tid;
+}
+
+//END GET Pending TID
+
+//UPDATE prd_status to Pending business approval
+$pnid_ld=node_load($prodnid);
+$pnid_ld->field_prod_status['und'][0]['tid']= $t1;
+
+node_save($pnid_ld);
+//END UPDATE PROD STATUS TO Pending business approval
+
+//UPDATE EVENT STATUS TO Pending business approval
+$enid_ld=node_load($eventid);
+$enid_ld->field_event_s_status['und'][0]['tid']= $t1;
+
+node_save($enid_ld);
+//END UPDATE EVENT STATUS TO Pending business approval
+  
+  }
+drupal_set_message('Your booking are successfully send to Business for confirmation');
+}
+
+?>

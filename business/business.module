@@ -1,0 +1,137 @@
+<?php
+
+/**
+* Implements hook_permission().
+*/
+function business_permission(){
+  return array(
+    'access content' => array(
+      'title' => t('Business module'),
+    ) 
+  ); 
+}
+
+
+function business_menu() {
+  $items = array();
+  
+  $items['confirmbooking'] = array(
+    //'description' => 'Configuration for Current posts module',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('confirmbooking_form'),
+    'access arguments' => array('access content'),
+   // 'type' => MENU_NORMAL_ITEM,
+  );
+
+  $items['rejectbooking'] = array(
+    //'description' => 'Configuration for Current posts module',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('rejectbooking_form'),
+    'access arguments' => array('access content'),
+   // 'type' => MENU_NORMAL_ITEM,
+  );
+
+
+return $items;
+}
+
+function confirmbooking_form($form, &$form_state,$logid){
+
+  $form[$logid]['logid']=array(
+     '#type'=>'hidden',
+     '#value'=>$logid,
+  );
+  
+ $form[$logid]['submit'] = array(
+    '#type'=>'submit',
+   '#value' => t('Confirm'),
+    '#name'=>t('Confirm'),
+   '#ajax' => array(
+                'callback' => 'confirmbooking_form_submit',
+                'wrapper' => 'confirmbooking-form',
+                'method' => 'replace',
+                'effect' => 'fade',
+                'progress' => array('type' => 'throbber', 'message' => t('Item confirmed...')),
+),
+
+  );
+  
+ return $form;
+}
+
+function confirmbooking_form_submit($form, &$form_state){
+
+$logid=$form_state['input']['logid'];
+
+//GET Confirm TID
+$tid=taxonomy_get_term_by_name('Confirm');
+foreach($tid as $t){
+ $t1=$t->tid;
+}
+
+//END GET Confirm TID
+
+//UPDATE log_status to confirm
+$pnid_ld=node_load($logid);
+$pnid_ld->field_prod_status['und'][0]['tid']= $t1;
+
+node_save($pnid_ld);
+
+//END UPDATE log_status to confirm
+}
+
+function rejectbooking_form($form, &$form_state,$logid){
+
+  $form[$logid]['logid']=array(
+     '#type'=>'hidden',
+     '#value'=>$logid,
+  );
+
+ $form[$logid]['reason']=array(
+     '#type'=>'textarea',
+     '#value'=>'',
+     '#title'=>t('Reject reason'),
+ );
+
+  
+ $form[$logid]['submit'] = array(
+    '#type'=>'submit',
+   '#value' => t('Reject'),
+    '#name'=>t('Reject'),
+   '#ajax' => array(
+                'callback' => 'rejectbooking_form_submit',
+                'wrapper' => 'rejectbooking-form',
+                'method' => 'replace',
+                'effect' => 'fade',
+                'progress' => array('type' => 'throbber', 'message' => t('Item Rejected...')),
+),
+
+  );
+  
+ return $form;
+}
+
+function rejectbooking_form_submit($form, &$form_state){
+
+$logid=$form_state['input']['logid'];
+$reason=$form_state['input']['reason'];
+
+//GET Confirm TID
+$tid=taxonomy_get_term_by_name('Reject');
+foreach($tid as $t){
+ $t1=$t->tid;
+}
+
+//END GET Confirm TID
+
+//UPDATE log_status to confirm
+$pnid_ld=node_load($logid);
+$pnid_ld->field_prod_status['und'][0]['tid']= $t1;
+$pnid_ld->field_reason_reject['und'][0]['value']=$reason;
+node_save($pnid_ld);
+
+//END UPDATE log_status to confirm
+}
+
+
+?>

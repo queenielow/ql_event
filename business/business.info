@@ -1,0 +1,5 @@
+name = business
+description = Business Section
+core = 7.x
+package = modules
+files[] = business.module

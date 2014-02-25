@@ -1,0 +1,117 @@
+<?php
+
+/**
+* Implements hook_permission().
+*/
+function eventuser_permission(){
+  return array(
+    'access content' => array(
+      'title' => t('Access for eventuser module'),
+    ) 
+  ); 
+}
+
+function eventuser_menu() {
+  $items = array();
+  
+  $items['eventuser'] = array(
+    'title' => 'eventuser',
+    //'description' => 'Configuration for Current posts module',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('eventuser_form'),
+    'access arguments' => array('access content'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  
+  return $items;
+}
+
+function eventuser_form() {
+   global $user;
+   $uid=$user->uid;
+   
+  $loaduser=user_load($uid);
+  
+ // Create New Role.
+ $newRoles = array('new role1');
+  foreach ($newRoles as $r){
+    if(!user_role_load_by_name($r)){
+      $role = new stdClass();
+      $role->name = $r;
+      user_role_save($role);
+    }
+  }
+ 
+// Role to grant the permissions to
+$editor_role = user_role_load_by_name('new role1');
+$editor_rid = $editor_role->rid;
+
+// Define our 'editor' role permissions
+/*$editor_permissions = array(
+  'administer blocks' => TRUE, // Grant permission
+  'access dashboard' => FALSE, // Revoke permission
+  'administer views'=>TRUE,
+  'article:create new content'=>TRUE
+);*/
+
+// Grant permissions to our 'editor' role
+/*user_role_change_permissions($editor_rid, $editor_permissions);  
+  
+  $new_user_roles = array(
+  DRUPAL_AUTHENTICATED_RID => 'new role',
+  $editor_rid => TRUE,
+);*/
+  
+ 
+  
+// Create a new user
+/*$new_user = new stdClass();
+$new_user->name = 'john doe';
+$new_user->pass = 'mypassword'; // plain text, hashed later
+$new_user->mail = 'john@doe.com';
+$new_user->roles = $new_user_roles;
+$new_user->status = 1; // omit this line to block this user at creation
+$new_user->is_new = TRUE; // not necessary because we already omit $new_user->uid
+user_save($new_user);*/
+  
+  /*$usertype=$loaduser->field_usertype['und'][0]['value'];
+  
+  if ($usertype=='supporter'){
+    $rolename='supporter';
+  }else{
+    $rolename='fundraiser';
+  }
+  
+  //Query RID value
+   $role = db_query("SELECT rid
+                     FROM role
+                     WHERE name = :rolename",
+                      array(':rolename'=>$rolename))->fetchField();
+    
+   $role_exist=db_query("select uid FROM users_roles WHERE uid=:uid and rid=:rid",
+                        array(':uid'=>$uid, 'rid'=>$role))->fetchField();
+   
+  if ($role_exist==""){
+   //* Insert into users_roles table
+   $userroles = db_insert('users_roles')->fields(array(
+  'uid' => $uid,
+  'rid' => $role,))->execute();
+    }*/
+    
+    /*Field_usertype: charityandclub ,ind-personal,ind-fund,school,supporter*/
+    
+    /*if ($usertype=='charityandclub'){
+        drupal_goto('node/add/red-registration-charityandclub');
+    }else if ($usertype=='supporter'){
+        drupal_goto('user');
+    }else if ($usertype=='ind-personal'){
+        drupal_goto('node/add/red-registration-individual-p');
+    }else if ($usertype=='ind-fund'){
+        drupal_goto('node/add/red-registration-individual-char');
+    }else if ($usertype=='school'){
+        drupal_goto('node/add/red-registration-school');
+    }*/
+}
+ 
+ 
+?>

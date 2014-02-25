@@ -1,0 +1,210 @@
+<?php
+
+/**
+* Implements hook_permission().
+*/
+function shoppingcart_permission(){
+  return array(
+    'access content' => array(
+      'title' => t('Access for shopping cart module'),
+    ) 
+  ); 
+}
+
+function shoppingcart_menu() {
+  $items = array();
+  
+  $items['viewcart'] = array(
+    'title' => 'eventuser',
+    //'description' => 'Configuration for Current posts module',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('addcart_form'),
+    'access arguments' => array('access content'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  
+  $items['taxaddcart']=array(
+  	'title'=>'taxaddcart',
+  	'page callback'=>'drupal_get_form',
+  	'page arguments'=>array('taxaddcart_form'),
+  	'access arguments'=>array('access content'),
+  	'type'=> MENU_NORMAL_ITEM,
+  );
+  
+  return $items;
+}
+
+function shoppingcart_block_info() {
+  $blocks = array();
+  $blocks['addtocart'] = array(
+    'info' => t('Add to cart Block'),
+  );
+  $blocks['viewcart'] = array(
+    'info' => t('View cart Block'),
+  );
+ 
+  return $blocks;
+}
+
+
+function shoppingcart_block_view($delta='') {
+  $block = array();
+  switch ($delta) {
+    case 'addtocart':
+      $block['subject'] = t('');
+      $block['content'] = drupal_get_form('addcart_form');
+     
+      break;
+    case 'viewcart':
+      $block['subject'] = t('My Cart');
+     // $block['content'] = viewcart_form();
+     $block['content'] =viewcart_form();
+      break;
+  }
+  return $block;
+}
+
+function addcart_form($form, &$form_state,$eventid,$prodid,$minqty){
+  global $user;
+  global $base_url;
+ 
+  $event_load=node_load($eventid);
+  
+  $event_name='Add to '.$event_load->title; 
+  
+  $form[$eventid]['prodid']=array(
+    '#type'=>'hidden',
+    '#value'=>$prodid,
+    );
+  
+  $form[$eventid]['eventid']=array(
+    '#type'=>'hidden',
+    '#value'=>$eventid,
+    );
+    
+  $form[$eventid]['eventqty']=array(
+    '#type'=>'textfield',
+    '#value'=>$minqty,
+    '#title'=>t('Qty'),
+    '#size'=>5,
+    );
+   
+
+  $form[$eventid]['submit'] = array(
+    '#type'=>'submit',
+    '#value' => t($event_name),
+
+  );
+  
+ return $form;
+ 
+}
+
+function addcart_form_validate($form, &$form_state){
+/*form_set_error('price', t('Price must be a positive number.'));*/
+
+   /* $min_qty=trim($form_state['values'][15]['eventqty']);
+    $eventids=$form_state['values'][15]['eventid'];
+    
+    if ($min_qty !== '' && !is_numeric($min_qty)) {
+    drupal_set_message('Quantity must be a range of 1 to 100 and numbers only.');
+         } 
+     
+    if ($min_qty==0){
+        drupal_set_message('Minimum quantity order: '.$min_qty);
+    }
+    */
+    
+}
+
+function addcart_form_submit($form, &$form_state){
+
+global $user;
+dsm($form_state);
+    $qty_ord=$form_state['values']['eventqty'];
+    $uid=$user->uid;
+    $prodid=$form_state['values']['prodid'];
+    $eventid=$form_state['values']['eventid'];
+    $today=date("Y-m-d H:i:s");
+    
+    
+ drupal_set_message($prodid." - ".$qty_ord." - ".$eventid);
+
+
+ 
+ /*
+  $newNode = (object) NULL;
+  $newNode->type = 'product_logs';
+  $newNode->title='Product Booked '.$eventid.'-'.$prodid;
+  $newNode->uid = $uid;
+  $newNode->created = strtotime("now");
+  $newNode->changed = strtotime("now");
+  $newNode->status = 1;
+  $newNode->comment = 0;
+  $newNode->promote = 0;
+  $newNode->moderate = 0;
+  $newNode->sticky = 0;
+  $newNode->language = 'und';
+
+ 
+node_object_prepare($newNode);
+$newNode->field_prod_id['und'][0]['value']=$prodid;
+$newNode->field_event_id['und'][0]['value']=$eventid;
+$newNote->field_qty['und'][0]['value']=$qty_ord;
+
+node_save($newNode);
+$node_id = $newNode->nid;
+*/
+ // drupal_set_message('Successfully added into your cart'); 
+            
+}
+
+function viewcart_form() {
+   global $user;
+   $uid=$user->uid;
+   
+  
+ $list='<ul>';
+ 
+ 
+ $list.='</ul>';
+return $list;
+}
+ 
+ 
+function taxaddcart_form(){
+global $user;
+global $node;
+
+$eid=arg(0);
+$pid=arg(1);
+
+echo $pid." - ".$eid."<br>";
+/*
+$pnodeload=node_load($prod_id);
+
+$newNode = (object) NULL;
+  $newNode->type = 'product_logs_'.$event_id;
+  $newNode->title='Product Booked';
+  $newNode->uid = $user->uid;
+  $newNode->created = strtotime("now");
+  $newNode->changed = strtotime("now");
+  $newNode->status = 1;
+  $newNode->comment = 0;
+  $newNode->promote = 0;
+  $newNode->moderate = 0;
+  $newNode->sticky = 0;
+  $newNode->language = 'und';
+
+ 
+node_object_prepare($newNode);
+$newNode->field_prod_id['und'][0]['value']=$prod_id;
+$newNode->field_event_id['und'][0]['value']=$event_id;
+$newNote->field_qty['und'][0]['value']=$qty;
+
+  node_save($newNode);
+  $node_id = $node->nid;
+*/
+}
+ 
+?>

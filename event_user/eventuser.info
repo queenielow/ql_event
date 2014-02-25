@@ -1,0 +1,5 @@
+name = eventuser
+description = Registration Hook for Events
+core = 7.x
+package = modules
+dependencies[] = user
